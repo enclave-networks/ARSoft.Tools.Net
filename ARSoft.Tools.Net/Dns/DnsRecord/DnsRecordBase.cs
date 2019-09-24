@@ -52,15 +52,8 @@ namespace ARSoft.Tools.Net.Dns
 
 		internal static DnsRecordBase Create(RecordType type, byte[] resultData, int recordDataPosition)
 		{
-			if ((type == RecordType.Key) && (resultData[recordDataPosition + 3] == (byte) DnsSecAlgorithm.DiffieHellman))
-			{
-				return new DiffieHellmanKeyRecord();
-			}
-			else
-			{
-				return Create(type);
-			}
-		}
+		    return Create(type);
+        }
 
 		internal static DnsRecordBase Create(RecordType type)
 		{
@@ -74,36 +67,14 @@ namespace ARSoft.Tools.Net.Dns
 					return new CNameRecord();
 				case RecordType.Soa:
 					return new SoaRecord();
-				case RecordType.Wks:
-					return new WksRecord();
 				case RecordType.Ptr:
 					return new PtrRecord();
-				case RecordType.HInfo:
-					return new HInfoRecord();
 				case RecordType.Mx:
 					return new MxRecord();
 				case RecordType.Txt:
 					return new TxtRecord();
 				case RecordType.Rp:
 					return new RpRecord();
-				case RecordType.Afsdb:
-					return new AfsdbRecord();
-				case RecordType.X25:
-					return new X25Record();
-				case RecordType.Isdn:
-					return new IsdnRecord();
-				case RecordType.Rt:
-					return new RtRecord();
-				case RecordType.Nsap:
-					return new NsapRecord();
-				case RecordType.Sig:
-					return new SigRecord();
-				case RecordType.Key:
-					return new KeyRecord();
-				case RecordType.Px:
-					return new PxRecord();
-				case RecordType.GPos:
-					return new GPosRecord();
 				case RecordType.Aaaa:
 					return new AaaaRecord();
 				case RecordType.Loc:
@@ -112,72 +83,10 @@ namespace ARSoft.Tools.Net.Dns
 					return new SrvRecord();
 				case RecordType.Naptr:
 					return new NaptrRecord();
-				case RecordType.Kx:
-					return new KxRecord();
-				case RecordType.Cert:
-					return new CertRecord();
-				case RecordType.DName:
-					return new DNameRecord();
-				case RecordType.Opt:
-					return new OptRecord();
-				case RecordType.Apl:
-					return new AplRecord();
-				case RecordType.Ds:
-					return new DsRecord();
-				case RecordType.SshFp:
-					return new SshFpRecord();
-				case RecordType.IpSecKey:
-					return new IpSecKeyRecord();
-				case RecordType.RrSig:
-					return new RrSigRecord();
-				case RecordType.NSec:
-					return new NSecRecord();
-				case RecordType.DnsKey:
-					return new DnsKeyRecord();
-				case RecordType.Dhcid:
-					return new DhcidRecord();
-				case RecordType.NSec3:
-					return new NSec3Record();
-				case RecordType.NSec3Param:
-					return new NSec3ParamRecord();
-				case RecordType.Tlsa:
-					return new TlsaRecord();
-				case RecordType.Hip:
-					return new HipRecord();
-				case RecordType.CDs:
-					return new CDsRecord();
-				case RecordType.CDnsKey:
-					return new CDnsKeyRecord();
-				case RecordType.OpenPGPKey:
-					return new OpenPGPKeyRecord();
-				case RecordType.CSync:
-					return new CSyncRecord();
-#pragma warning disable 0612
-				case RecordType.Spf:
-					return new SpfRecord();
-#pragma warning restore 0612
-				case RecordType.NId:
-					return new NIdRecord();
-				case RecordType.L32:
-					return new L32Record();
-				case RecordType.L64:
-					return new L64Record();
-				case RecordType.LP:
-					return new LPRecord();
 				case RecordType.Eui48:
 					return new Eui48Record();
 				case RecordType.Eui64:
 					return new Eui64Record();
-				case RecordType.TKey:
-					return new TKeyRecord();
-				case RecordType.TSig:
-					return new TSigRecord();
-				case RecordType.Uri:
-					return new UriRecord();
-				case RecordType.CAA:
-					return new CAARecord();
-				case RecordType.Dlv:
-					return new DlvRecord();
 
 				default:
 					return new UnknownRecord();

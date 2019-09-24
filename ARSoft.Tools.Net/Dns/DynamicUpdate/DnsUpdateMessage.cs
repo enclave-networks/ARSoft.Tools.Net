@@ -89,17 +89,10 @@ namespace ARSoft.Tools.Net.Dns.DynamicUpdate
 			DnsUpdateMessage result = new DnsUpdateMessage()
 			{
 				TransactionID = TransactionID,
-				IsEDnsEnabled = IsEDnsEnabled,
 				IsQuery = false,
 				OperationCode = OperationCode,
 				Questions = new List<DnsQuestion>(Questions),
 			};
-
-			if (IsEDnsEnabled)
-			{
-				result.EDnsOptions.Version = EDnsOptions.Version;
-				result.EDnsOptions.UdpPayloadSize = EDnsOptions.UdpPayloadSize;
-			}
 
 			return result;
 		}

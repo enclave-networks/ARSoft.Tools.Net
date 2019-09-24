@@ -98,117 +98,17 @@ namespace ARSoft.Tools.Net.Dns
 			{
 				ReturnCode rcode = (ReturnCode) (Flags & 0x000f);
 
-				OptRecord ednsOptions = EDnsOptions;
-				if (ednsOptions == null)
-				{
-					return rcode;
-				}
-				else
-				{
-					// ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
-					return (rcode | ednsOptions.ExtendedReturnCode);
-				}
+			    return rcode;
 			}
 			set
 			{
-				OptRecord ednsOptions = EDnsOptions;
-
-				if ((ushort) value > 15)
-				{
-					if (ednsOptions == null)
-					{
-						throw new ArgumentOutOfRangeException(nameof(value), "ReturnCodes greater than 15 only allowed in edns messages");
-					}
-					else
-					{
-						ednsOptions.ExtendedReturnCode = value;
-					}
-				}
-				else
-				{
-					if (ednsOptions != null)
-					{
-						ednsOptions.ExtendedReturnCode = 0;
-					}
-				}
-
 				ushort clearedOp = (ushort) (Flags & 0xfff0);
 				Flags = (ushort) (clearedOp | ((ushort) value & 0x0f));
 			}
 		}
 		#endregion
-
-		#region EDNS
-		/// <summary>
-		///   Enables or disables EDNS
-		/// </summary>
-		public bool IsEDnsEnabled
-		{
-			get
-			{
-				if (_additionalRecords != null)
-				{
-					return _additionalRecords.Any(record => (record.RecordType == RecordType.Opt));
-				}
-				else
-				{
-					return false;
-				}
-			}
-			set
-			{
-				if (value && !IsEDnsEnabled)
-				{
-					if (_additionalRecords == null)
-					{
-						_additionalRecords = new List<DnsRecordBase>();
-					}
-					_additionalRecords.Add(new OptRecord());
-				}
-				else if (!value && IsEDnsEnabled)
-				{
-					_additionalRecords.RemoveAll(record => (record.RecordType == RecordType.Opt));
-				}
-			}
-		}
-
-		/// <summary>
-		///   Gets or set the OptRecord for the EDNS options
-		/// </summary>
-		public OptRecord EDnsOptions
-		{
-			get { return (OptRecord) _additionalRecords?.Find(record => (record.RecordType == RecordType.Opt)); }
-			set
-			{
-				if (value == null)
-				{
-					IsEDnsEnabled = false;
-				}
-				else if (IsEDnsEnabled)
-				{
-					int pos = _additionalRecords.FindIndex(record => (record.RecordType == RecordType.Opt));
-					_additionalRecords[pos] = value;
-				}
-				else
-				{
-					if (_additionalRecords == null)
-					{
-						_additionalRecords = new List<DnsRecordBase>();
-					}
-					_additionalRecords.Add(value);
-				}
-			}
-		}
-		#endregion
-
-		#region TSig
-		/// <summary>
-		///   Gets or set the TSigRecord for the tsig signed messages
-		/// </summary>
-		// ReSharper disable once InconsistentNaming
-		public TSigRecord TSigOptions { get; set; }
-
-		internal static DnsMessageBase CreateByFlag(byte[] data, DnsServer.SelectTsigKey tsigKeySelector, byte[] originalMac)
+        
+		internal static DnsMessageBase CreateByFlag(byte[] data)
 		{
 			int flagPosition = 2;
 			ushort flags = ParseUShort(data, ref flagPosition);
@@ -226,7 +126,7 @@ namespace ARSoft.Tools.Net.Dns
 					break;
 			}
 
-			res.ParseInternal(data, tsigKeySelector, originalMac);
+			res.ParseInternal(data);
 
 			return res;
 		}
@@ -234,18 +134,12 @@ namespace ARSoft.Tools.Net.Dns
 		internal static TMessage Parse<TMessage>(byte[] data)
 			where TMessage : DnsMessageBase, new()
 		{
-			return Parse<TMessage>(data, null, null);
-		}
-
-		internal static TMessage Parse<TMessage>(byte[] data, DnsServer.SelectTsigKey tsigKeySelector, byte[] originalMac)
-			where TMessage : DnsMessageBase, new()
-		{
 			TMessage result = new TMessage();
-			result.ParseInternal(data, tsigKeySelector, originalMac);
+			result.ParseInternal(data);
 			return result;
 		}
 
-		private void ParseInternal(byte[] data, DnsServer.SelectTsigKey tsigKeySelector, byte[] originalMac)
+		private void ParseInternal(byte[] data)
 		{
 			int currentPosition = 0;
 
@@ -262,87 +156,8 @@ namespace ARSoft.Tools.Net.Dns
 			ParseSection(data, ref currentPosition, AuthorityRecords, authorityRecordCount);
 			ParseSection(data, ref currentPosition, _additionalRecords, additionalRecordCount);
 
-			if (_additionalRecords.Count > 0)
-			{
-				int tSigPos = _additionalRecords.FindIndex(record => (record.RecordType == RecordType.TSig));
-				if (tSigPos == (_additionalRecords.Count - 1))
-				{
-					TSigOptions = (TSigRecord) _additionalRecords[tSigPos];
-
-					_additionalRecords.RemoveAt(tSigPos);
-
-					TSigOptions.ValidationResult = ValidateTSig(data, tsigKeySelector, originalMac);
-				}
-			}
-
 			FinishParsing();
 		}
-
-		private ReturnCode ValidateTSig(byte[] resultData, DnsServer.SelectTsigKey tsigKeySelector, byte[] originalMac)
-		{
-			byte[] keyData;
-			if ((TSigOptions.Algorithm == TSigAlgorithm.Unknown) || (tsigKeySelector == null) || ((keyData = tsigKeySelector(TSigOptions.Algorithm, TSigOptions.Name)) == null))
-			{
-				return ReturnCode.BadKey;
-			}
-			else if (((TSigOptions.TimeSigned - TSigOptions.Fudge) > DateTime.Now) || ((TSigOptions.TimeSigned + TSigOptions.Fudge) < DateTime.Now))
-			{
-				return ReturnCode.BadTime;
-			}
-			else if ((TSigOptions.Mac == null) || (TSigOptions.Mac.Length == 0))
-			{
-				return ReturnCode.BadSig;
-			}
-			else
-			{
-				TSigOptions.KeyData = keyData;
-
-				// maxLength for the buffer to validate: Original (unsigned) dns message and encoded TSigOptions
-				// because of compression of keyname, the size of the signed message can not be used
-				int maxLength = TSigOptions.StartPosition + TSigOptions.MaximumLength;
-				if (originalMac != null)
-				{
-					// add length of mac on responses. MacSize not neccessary, this field is allready included in the size of the tsig options
-					maxLength += originalMac.Length;
-				}
-
-				byte[] validationBuffer = new byte[maxLength];
-
-				int currentPosition = 0;
-
-				// original mac if neccessary
-				if ((originalMac != null) && (originalMac.Length > 0))
-				{
-					EncodeUShort(validationBuffer, ref currentPosition, (ushort) originalMac.Length);
-					EncodeByteArray(validationBuffer, ref currentPosition, originalMac);
-				}
-
-				// original unsiged buffer
-				Buffer.BlockCopy(resultData, 0, validationBuffer, currentPosition, TSigOptions.StartPosition);
-
-				// update original transaction id and ar count in message
-				EncodeUShort(validationBuffer, currentPosition, TSigOptions.OriginalID);
-				EncodeUShort(validationBuffer, currentPosition + 10, (ushort) _additionalRecords.Count);
-				currentPosition += TSigOptions.StartPosition;
-
-				// TSig Variables
-				EncodeDomainName(validationBuffer, 0, ref currentPosition, TSigOptions.Name, null, false);
-				EncodeUShort(validationBuffer, ref currentPosition, (ushort) TSigOptions.RecordClass);
-				EncodeInt(validationBuffer, ref currentPosition, (ushort) TSigOptions.TimeToLive);
-				EncodeDomainName(validationBuffer, 0, ref currentPosition, TSigAlgorithmHelper.GetDomainName(TSigOptions.Algorithm), null, false);
-				TSigRecord.EncodeDateTime(validationBuffer, ref currentPosition, TSigOptions.TimeSigned);
-				EncodeUShort(validationBuffer, ref currentPosition, (ushort) TSigOptions.Fudge.TotalSeconds);
-				EncodeUShort(validationBuffer, ref currentPosition, (ushort) TSigOptions.Error);
-				EncodeUShort(validationBuffer, ref currentPosition, (ushort) TSigOptions.OtherData.Length);
-				EncodeByteArray(validationBuffer, ref currentPosition, TSigOptions.OtherData);
-
-				// Validate MAC
-				KeyedHashAlgorithm hashAlgorithm = TSigAlgorithmHelper.GetHashAlgorithm(TSigOptions.Algorithm);
-				hashAlgorithm.Key = keyData;
-				return (hashAlgorithm.ComputeHash(validationBuffer, 0, currentPosition).SequenceEqual(TSigOptions.Mac)) ? ReturnCode.NoError : ReturnCode.BadSig;
-			}
-		}
-		#endregion
 
 		#region Parsing
 		protected virtual void FinishParsing() {}
@@ -591,40 +406,18 @@ namespace ARSoft.Tools.Net.Dns
 		#region Serializing
 		protected virtual void PrepareEncoding() {}
 
-		public int Encode(bool addLengthPrefix, out byte[] messageData)
+	    public int Encode(bool addLengthPrefix, out byte[] messageData)
 		{
-			byte[] newTSigMac;
-
-			return Encode(addLengthPrefix, null, false, out messageData, out newTSigMac);
+			return Encode(addLengthPrefix, false, out messageData);
 		}
 
-	    public int Encode(bool addLengthPrefix, byte[] originalTsigMac, out byte[] messageData)
-		{
-			byte[] newTSigMac;
-
-			return Encode(addLengthPrefix, originalTsigMac, false, out messageData, out newTSigMac);
-		}
-
-	    public int Encode(bool addLengthPrefix, byte[] originalTsigMac, bool isSubSequentResponse, out byte[] messageData, out byte[] newTSigMac)
+	    public int Encode(bool addLengthPrefix, bool isSubSequentResponse, out byte[] messageData)
 		{
 			PrepareEncoding();
 
 			int offset = 0;
 			int messageOffset = offset;
 			int maxLength = addLengthPrefix ? 2 : 0;
-
-			originalTsigMac = originalTsigMac ?? new byte[] { };
-
-			if (TSigOptions != null)
-			{
-				if (!IsQuery)
-				{
-					offset += 2 + originalTsigMac.Length;
-					maxLength += 2 + originalTsigMac.Length;
-				}
-
-				maxLength += TSigOptions.MaximumLength;
-			}
 
 			#region Get Message Length
 			maxLength += 12;
@@ -662,64 +455,7 @@ namespace ARSoft.Tools.Net.Dns
 			{
 				record.Encode(messageData, offset, ref currentPosition, domainNames);
 			}
-
-			if (TSigOptions == null)
-			{
-				newTSigMac = null;
-			}
-			else
-			{
-				if (!IsQuery)
-				{
-					EncodeUShort(messageData, messageOffset, (ushort) originalTsigMac.Length);
-					Buffer.BlockCopy(originalTsigMac, 0, messageData, messageOffset + 2, originalTsigMac.Length);
-				}
-
-				EncodeUShort(messageData, offset, TSigOptions.OriginalID);
-
-				int tsigVariablesPosition = currentPosition;
-
-				if (isSubSequentResponse)
-				{
-					TSigRecord.EncodeDateTime(messageData, ref tsigVariablesPosition, TSigOptions.TimeSigned);
-					EncodeUShort(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.Fudge.TotalSeconds);
-				}
-				else
-				{
-					EncodeDomainName(messageData, offset, ref tsigVariablesPosition, TSigOptions.Name, null, false);
-					EncodeUShort(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.RecordClass);
-					EncodeInt(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.TimeToLive);
-					EncodeDomainName(messageData, offset, ref tsigVariablesPosition, TSigAlgorithmHelper.GetDomainName(TSigOptions.Algorithm), null, false);
-					TSigRecord.EncodeDateTime(messageData, ref tsigVariablesPosition, TSigOptions.TimeSigned);
-					EncodeUShort(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.Fudge.TotalSeconds);
-					EncodeUShort(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.Error);
-					EncodeUShort(messageData, ref tsigVariablesPosition, (ushort) TSigOptions.OtherData.Length);
-					EncodeByteArray(messageData, ref tsigVariablesPosition, TSigOptions.OtherData);
-				}
-
-				KeyedHashAlgorithm hashAlgorithm = TSigAlgorithmHelper.GetHashAlgorithm(TSigOptions.Algorithm);
-				if ((hashAlgorithm != null) && (TSigOptions.KeyData != null) && (TSigOptions.KeyData.Length > 0))
-				{
-					hashAlgorithm.Key = TSigOptions.KeyData;
-					newTSigMac = hashAlgorithm.ComputeHash(messageData, messageOffset, tsigVariablesPosition);
-				}
-				else
-				{
-					newTSigMac = new byte[] { };
-				}
-
-				EncodeUShort(messageData, offset, TransactionID);
-				EncodeUShort(messageData, offset + 10, (ushort) (_additionalRecords.Count + 1));
-
-				TSigOptions.Encode(messageData, offset, ref currentPosition, domainNames, newTSigMac);
-
-				if (!IsQuery)
-				{
-					Buffer.BlockCopy(messageData, offset, messageData, messageOffset, (currentPosition - offset));
-					currentPosition -= (2 + originalTsigMac.Length);
-				}
-			}
-
+            
 			if (addLengthPrefix)
 			{
 				Buffer.BlockCopy(messageData, 0, messageData, 2, currentPosition);

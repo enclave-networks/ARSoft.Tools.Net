@@ -33,14 +33,6 @@ namespace ARSoft.Tools.Net.Dns
 	/// </summary>
 	public class DnsServer : IDisposable
 	{
-		/// <summary>
-		///   Represents the method, that will be called to get the keydata for processing a tsig signed message
-		/// </summary>
-		/// <param name="algorithm"> The algorithm which is used in the message </param>
-		/// <param name="keyName"> The keyname which is used in the message </param>
-		/// <returns> Binary representation of the key </returns>
-		public delegate byte[] SelectTsigKey(TSigAlgorithm algorithm, DomainName keyName);
-
 		private const int _DNS_PORT = 53;
 
 		private readonly object _listenerLock = new object();
@@ -56,11 +48,6 @@ namespace ARSoft.Tools.Net.Dns
 
 		private int _availableTcpListener;
 		private bool _hasActiveTcpListener;
-
-		/// <summary>
-		///   Method that will be called to get the keydata for processing a tsig signed message
-		/// </summary>
-		public SelectTsigKey TsigKeySelector;
 
 		/// <summary>
 		///   Gets or sets the timeout for sending and receiving data
@@ -144,39 +131,6 @@ namespace ARSoft.Tools.Net.Dns
 
 		private async Task<DnsMessageBase> ProcessMessageAsync(DnsMessageBase query, ProtocolType protocolType, IPEndPoint remoteEndpoint)
 		{
-			if (query.TSigOptions != null)
-			{
-				switch (query.TSigOptions.ValidationResult)
-				{
-					case ReturnCode.BadKey:
-					case ReturnCode.BadSig:
-						query.IsQuery = false;
-						query.ReturnCode = ReturnCode.NotAuthoritive;
-						query.TSigOptions.Error = query.TSigOptions.ValidationResult;
-						query.TSigOptions.KeyData = null;
-
-#pragma warning disable 4014
-						InvalidSignedMessageReceived.RaiseAsync(this, new InvalidSignedMessageEventArgs(query, protocolType, remoteEndpoint));
-#pragma warning restore 4014
-
-						return query;
-
-					case ReturnCode.BadTime:
-						query.IsQuery = false;
-						query.ReturnCode = ReturnCode.NotAuthoritive;
-						query.TSigOptions.Error = query.TSigOptions.ValidationResult;
-						query.TSigOptions.OtherData = new byte[6];
-						int tmp = 0;
-						TSigRecord.EncodeDateTime(query.TSigOptions.OtherData, ref tmp, DateTime.Now);
-
-#pragma warning disable 4014
-						InvalidSignedMessageReceived.RaiseAsync(this, new InvalidSignedMessageEventArgs(query, protocolType, remoteEndpoint));
-#pragma warning restore 4014
-
-						return query;
-				}
-			}
-
 			QueryReceivedEventArgs eventArgs = new QueryReceivedEventArgs(query, protocolType, remoteEndpoint);
 			await QueryReceived.RaiseAsync(this, eventArgs);
 			return eventArgs.Response;
@@ -230,11 +184,9 @@ namespace ARSoft.Tools.Net.Dns
 				byte[] buffer = receiveResult.Buffer;
 
 				DnsMessageBase query;
-				byte[] originalMac;
 				try
 				{
-					query = DnsMessageBase.CreateByFlag(buffer, TsigKeySelector, null);
-					originalMac = query.TSigOptions?.Mac;
+					query = DnsMessageBase.CreateByFlag(buffer);
 				}
 				catch (Exception e)
 				{
@@ -259,7 +211,7 @@ namespace ARSoft.Tools.Net.Dns
 					query.ReturnCode = ReturnCode.ServerFailure;
 				}
 
-				int length = response.Encode(false, originalMac, out buffer);
+				int length = response.Encode(false, out buffer);
 
 				#region Truncating
 				DnsMessage message = response as DnsMessage;
@@ -267,28 +219,9 @@ namespace ARSoft.Tools.Net.Dns
 				if (message != null)
 				{
 					int maxLength = 512;
-					if (query.IsEDnsEnabled && message.IsEDnsEnabled)
-					{
-						maxLength = Math.Max(512, (int) message.EDnsOptions.UdpPayloadSize);
-					}
 
 					while (length > maxLength)
 					{
-						// First step: remove data from additional records except the opt record
-						if ((message.IsEDnsEnabled && (message.AdditionalRecords.Count > 1)) || (!message.IsEDnsEnabled && (message.AdditionalRecords.Count > 0)))
-						{
-							for (int i = message.AdditionalRecords.Count - 1; i >= 0; i--)
-							{
-								if (message.AdditionalRecords[i].RecordType != RecordType.Opt)
-								{
-									message.AdditionalRecords.RemoveAt(i);
-								}
-							}
-
-							length = message.Encode(false, originalMac, out buffer);
-							continue;
-						}
-
 						int savedLength = 0;
 						if (message.AuthorityRecords.Count > 0)
 						{
@@ -305,7 +238,7 @@ namespace ARSoft.Tools.Net.Dns
 
 							message.IsTruncated = true;
 
-							length = message.Encode(false, originalMac, out buffer);
+							length = message.Encode(false, out buffer);
 							continue;
 						}
 
@@ -324,7 +257,7 @@ namespace ARSoft.Tools.Net.Dns
 
 							message.IsTruncated = true;
 
-							length = message.Encode(false, originalMac, out buffer);
+							length = message.Encode(false, out buffer);
 							continue;
 						}
 
@@ -343,7 +276,7 @@ namespace ARSoft.Tools.Net.Dns
 
 							message.IsTruncated = true;
 
-							length = message.Encode(false, originalMac, out buffer);
+							length = message.Encode(false, out buffer);
 						}
 					}
 				}
@@ -425,11 +358,10 @@ namespace ARSoft.Tools.Net.Dns
 						}
 
 						DnsMessageBase query;
-						byte[] tsigMac;
+
 						try
 						{
-							query = DnsMessageBase.CreateByFlag(buffer, TsigKeySelector, null);
-							tsigMac = query.TSigOptions?.Mac;
+							query = DnsMessageBase.CreateByFlag(buffer);
 						}
 						catch (Exception e)
 						{
@@ -445,7 +377,7 @@ namespace ARSoft.Tools.Net.Dns
 						{
 							OnExceptionThrownAsync(ex);
 
-							response = DnsMessageBase.CreateByFlag(buffer, TsigKeySelector, null);
+							response = DnsMessageBase.CreateByFlag(buffer);
 							response.IsQuery = false;
 							response.AdditionalRecords.Clear();
 							response.AuthorityRecords.Clear();
@@ -454,7 +386,7 @@ namespace ARSoft.Tools.Net.Dns
 
 						byte[] newTsigMac;
 
-						length = response.Encode(true, tsigMac, false, out buffer, out newTsigMac);
+						length = response.Encode(true, false, out buffer);
 
 						if (length <= 65535)
 						{
@@ -466,13 +398,13 @@ namespace ARSoft.Tools.Net.Dns
 							{
 								OnExceptionThrownAsync(new ArgumentException("The length of the serialized response is greater than 65,535 bytes"));
 
-								response = DnsMessageBase.CreateByFlag(buffer, TsigKeySelector, null);
+								response = DnsMessageBase.CreateByFlag(buffer);
 								response.IsQuery = false;
 								response.AdditionalRecords.Clear();
 								response.AuthorityRecords.Clear();
 								response.ReturnCode = ReturnCode.ServerFailure;
 
-								length = response.Encode(true, tsigMac, false, out buffer, out newTsigMac);
+								length = response.Encode(true, false, out buffer);
 								await stream.WriteAsync(buffer, 0, length);
 							}
 							else
@@ -491,7 +423,7 @@ namespace ARSoft.Tools.Net.Dns
 										nextPacketRecords.InsertRange(0, response.AnswerRecords.GetRange(lastIndex, removeCount));
 										response.AnswerRecords.RemoveRange(lastIndex, removeCount);
 
-										length = response.Encode(true, tsigMac, isSubSequentResponse, out buffer, out newTsigMac);
+										length = response.Encode(true, isSubSequentResponse, out buffer);
 									}
 
 									await stream.WriteAsync(buffer, 0, length);
@@ -500,16 +432,11 @@ namespace ARSoft.Tools.Net.Dns
 										break;
 
 									isSubSequentResponse = true;
-									tsigMac = newTsigMac;
 									response.AnswerRecords = nextPacketRecords;
-									length = response.Encode(true, tsigMac, true, out buffer, out newTsigMac);
+									length = response.Encode(true, true, out buffer);
 								}
 							}
 						}
-
-						// Since support for multiple tsig signed messages is not finished, just close connection after response to first signed query
-						if (newTsigMac != null)
-							break;
 					}
 				}
 			}

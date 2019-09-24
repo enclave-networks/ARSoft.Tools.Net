@@ -24,8 +24,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ARSoft.Tools.Net.Dns;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Digests;
 
 namespace ARSoft.Tools.Net
 {
@@ -137,47 +135,6 @@ namespace ARSoft.Tools.Net
 				return false;
 
 			return GetParentName(LabelCount - domainName.LabelCount).Equals(domainName);
-		}
-
-		internal byte[] GetNSec3Hash(NSec3HashAlgorithm algorithm, int iterations, byte[] salt)
-		{
-			IDigest digest;
-
-			switch (algorithm)
-			{
-				case NSec3HashAlgorithm.Sha1:
-					digest = new Sha1Digest();
-					break;
-
-				default:
-					throw new NotSupportedException();
-			}
-
-			byte[] buffer = new byte[Math.Max(MaximumRecordDataLength + 1, digest.GetDigestSize()) + salt.Length];
-
-			int length = 0;
-
-			DnsMessageBase.EncodeDomainName(buffer, 0, ref length, this, null, true);
-
-			for (int i = 0; i <= iterations; i++)
-			{
-				DnsMessageBase.EncodeByteArray(buffer, ref length, salt);
-
-				digest.BlockUpdate(buffer, 0, length);
-
-				digest.DoFinal(buffer, 0);
-				length = digest.GetDigestSize();
-			}
-
-			byte[] res = new byte[length];
-			Buffer.BlockCopy(buffer, 0, res, 0, length);
-
-			return res;
-		}
-
-		internal DomainName GetNsec3HashName(NSec3HashAlgorithm algorithm, int iterations, byte[] salt, DomainName zoneApex)
-		{
-			return new DomainName(GetNSec3Hash(algorithm, iterations, salt).ToBase32HexString(), zoneApex);
 		}
 
 		internal static DomainName ParseFromMasterfile(string s)

@@ -206,39 +206,6 @@ namespace ARSoft.Tools.Net.Dns
 		}
 
 		/// <summary>
-		///   <para>Gets or sets the DNSSEC answer OK (DO) flag</para>
-		///   <para>
-		///     Defined in
-		///     <see cref="!:http://tools.ietf.org/html/rfc4035">RFC 4035</see>
-		///     and
-		///     <see cref="!:http://tools.ietf.org/html/rfc3225">RFC 3225</see>
-		///   </para>
-		/// </summary>
-		public bool IsDnsSecOk
-		{
-			get
-			{
-				OptRecord ednsOptions = EDnsOptions;
-				return (ednsOptions != null) && ednsOptions.IsDnsSecOk;
-			}
-			set
-			{
-				OptRecord ednsOptions = EDnsOptions;
-				if (ednsOptions == null)
-				{
-					if (value)
-					{
-						throw new ArgumentOutOfRangeException(nameof(value), "Setting DO flag is allowed in edns messages only");
-					}
-				}
-				else
-				{
-					ednsOptions.IsDnsSecOk = value;
-				}
-			}
-		}
-
-		/// <summary>
 		///   Creates a new instance of the DnsMessage as response to the current instance
 		/// </summary>
 		/// <returns>A new instance of the DnsMessage as response to the current instance</returns>
@@ -247,20 +214,12 @@ namespace ARSoft.Tools.Net.Dns
 			DnsMessage result = new DnsMessage()
 			{
 				TransactionID = TransactionID,
-				IsEDnsEnabled = IsEDnsEnabled,
 				IsQuery = false,
 				OperationCode = OperationCode,
 				IsRecursionDesired = IsRecursionDesired,
 				IsCheckingDisabled = IsCheckingDisabled,
-				IsDnsSecOk = IsDnsSecOk,
 				Questions = new List<DnsQuestion>(Questions),
 			};
-
-			if (IsEDnsEnabled)
-			{
-				result.EDnsOptions.Version = EDnsOptions.Version;
-				result.EDnsOptions.UdpPayloadSize = EDnsOptions.UdpPayloadSize;
-			}
 
 			return result;
 		}
