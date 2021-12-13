@@ -16,17 +16,14 @@
 // limitations under the License.
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ARSoft.Tools.Net.Dns
 {
-	/// <summary>
-	///   Message returned as result to a dns query
-	/// </summary>
-	public class DnsMessage : DnsMessageBase
+    /// <summary>
+    ///   Message returned as result to a dns query
+    /// </summary>
+    public class DnsMessage : DnsMessageBase
 	{
 		/// <summary>
 		///   Parses a the contents of a byte array as DnsMessage

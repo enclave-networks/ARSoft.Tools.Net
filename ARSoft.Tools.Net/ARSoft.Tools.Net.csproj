@@ -1,116 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{65BFA748-C640-49B0-B506-34BBB165233A}</ProjectGuid>
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ARSoft.Tools.Net</RootNamespace>
-    <AssemblyName>ARSoft.Tools.Net</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <UpgradeBackupLocation />
-    <ApplicationVersion>1.2.3.4</ApplicationVersion>
-    <TargetFrameworkProfile />
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
-    <DocumentationFile>
-    </DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DocumentationFile>..\bin\Release\ARSoft.Tools.Net.xml</DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="Exists('D:\arsoft.pfx')">
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>D:\arsoft.pfx</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AsyncEventHandler.cs" />
-    <Compile Include="AsyncEventHandlerExtensions.cs" />
-    <Compile Include="BaseEncoding.cs" />
-    <Compile Include="Dns\ClientConnectedEventArgs.cs" />
-    <Compile Include="Dns\DnsMessage.cs" />
-    <Compile Include="Dns\DnsMessageBase.cs" />
-    <Compile Include="Dns\DnsMessageEntryBase.cs" />
-    <Compile Include="Dns\DnsQueryOptions.cs" />
-    <Compile Include="Dns\DnsQuestion.cs" />
-    <Compile Include="Dns\DnsRecord\AaaaRecord.cs" />
-    <Compile Include="Dns\DnsRecord\AddressRecordBase.cs" />
-    <Compile Include="Dns\DnsRecord\ARecord.cs" />
-    <Compile Include="Dns\DnsRecord\CNameRecord.cs" />
-    <Compile Include="Dns\DnsRecord\DnsRecordBase.cs" />
-    <Compile Include="Dns\DnsRecord\Eui48Record.cs" />
-    <Compile Include="Dns\DnsRecord\Eui64Record.cs" />
-    <Compile Include="Dns\DnsRecord\IAddressRecord.cs" />
-    <Compile Include="Dns\DnsRecord\ITextRecord.cs" />
-    <Compile Include="Dns\DnsRecord\LocRecord.cs" />
-    <Compile Include="Dns\DnsRecord\MxRecord.cs" />
-    <Compile Include="Dns\DnsRecord\NaptrRecord.cs" />
-    <Compile Include="Dns\DnsRecord\NsRecord.cs" />
-    <Compile Include="Dns\DnsRecord\RpRecord.cs" />
-    <Compile Include="Dns\DnsRecord\TextRecordBase.cs" />
-    <Compile Include="DomainName.cs" />
-    <Compile Include="Dns\DynamicUpdate\AddRecordUpdate.cs" />
-    <Compile Include="Dns\DynamicUpdate\DeleteAllRecordsUpdate.cs" />
-    <Compile Include="Dns\DynamicUpdate\DeleteRecordUpdate.cs" />
-    <Compile Include="Dns\DynamicUpdate\DnsUpdateMessage.cs" />
-    <Compile Include="Dns\DynamicUpdate\NameIsInUsePrequisite.cs" />
-    <Compile Include="Dns\DynamicUpdate\NameIsNotInUsePrequisite.cs" />
-    <Compile Include="Dns\DynamicUpdate\PrequisiteBase.cs" />
-    <Compile Include="Dns\DynamicUpdate\RecordExistsPrequisite.cs" />
-    <Compile Include="Dns\DynamicUpdate\RecordNotExistsPrequisite.cs" />
-    <Compile Include="Dns\DynamicUpdate\UpdateBase.cs" />
-    <Compile Include="Dns\QueryReceivedEventArgs.cs" />
-    <Compile Include="Dns\DnsServer.cs" />
-    <Compile Include="Dns\DnsRecord\PtrRecord.cs" />
-    <Compile Include="Dns\DnsRecord\SoaRecord.cs" />
-    <Compile Include="Dns\DnsRecord\SrvRecord.cs" />
-    <Compile Include="Dns\DnsRecord\TxtRecord.cs" />
-    <Compile Include="Dns\DnsRecord\UnknownRecord.cs" />
-    <Compile Include="Dns\ExceptionEventArgs.cs" />
-    <Compile Include="Dns\OperationCode.cs" />
-    <Compile Include="Dns\RecordClass.cs" />
-    <Compile Include="Dns\RecordType.cs" />
-    <Compile Include="Dns\ReturnCode.cs" />
-    <Compile Include="Dns\Zone.cs" />
-    <Compile Include="EnumHelper.cs" />
-    <Compile Include="Dns\InvalidSignedMessageEventArgs.cs" />
-    <Compile Include="EventHandlerExtensions.cs" />
-    <Compile Include="IPAddressExtensions.cs" />
-    <Compile Include="StringExtensions.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TcpClientExtensions.cs" />
-    <Compile Include="UdpClientExtensions.cs" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -119,17 +14,4 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <ProjectExtensions>
-    <VisualStudio>
-      <UserProperties DocumentXCommentEditorState="&lt;HtmlEditState&gt;&#xA;  &lt;Attributes&gt;&#xA;    &lt;Attribute key=&quot;dtscrollpos&quot; valuetype=&quot;integer&quot;&gt;0&lt;/Attribute&gt;&#xA;    &lt;Attribute key=&quot;inheritedMembers&quot; valuetype=&quot;string&quot;&gt;on&lt;/Attribute&gt;&#xA;    &lt;Attribute key=&quot;protectedMembers&quot; valuetype=&quot;string&quot;&gt;on&lt;/Attribute&gt;&#xA;    &lt;Attribute key=&quot;lang_CS&quot; valuetype=&quot;string&quot;&gt;on&lt;/Attribute&gt;&#xA;  &lt;/Attributes&gt;&#xA;&lt;/HtmlEditState&gt;" />
-    </VisualStudio>
-  </ProjectExtensions>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
