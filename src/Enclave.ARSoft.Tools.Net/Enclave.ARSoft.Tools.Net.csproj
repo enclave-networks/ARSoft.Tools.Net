@@ -15,7 +15,4 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Enclave.Sdk.Security" Version="3.0.0" />
-  </ItemGroup>
 </Project>

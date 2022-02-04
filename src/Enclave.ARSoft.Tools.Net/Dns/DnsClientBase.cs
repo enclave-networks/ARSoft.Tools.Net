@@ -25,16 +25,14 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using Enclave.Sdk.Security;
 
 namespace ARSoft.Tools.Net.Dns
 {
 	public abstract class DnsClientBase
 	{
-		private static readonly IRngSecure _secureRandom = RngSecure.Shared;
-
 		private readonly List<IPAddress> _servers;
 		private readonly bool _isAnyServerMulticast;
 		private readonly int _port;
@@ -263,7 +261,7 @@ namespace ARSoft.Tools.Net.Dns
 		{
 			if (message.TransactionID == 0)
 			{
-				message.TransactionID = (ushort) BinaryPrimitives.ReadUInt16LittleEndian(_secureRandom.GetRandomBits(sizeof(ushort) * 8));
+				message.TransactionID = (ushort) RandomNumberGenerator.GetInt32(0, 0xffff);
 			}
 
 			if (Is0x20ValidationEnabled)
