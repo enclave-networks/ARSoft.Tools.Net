@@ -27,9 +27,9 @@ jobs:
       uses: gittools/actions/gitversion/execute@v0.9.7
               
     - name: Setup .NET 6 (SDK)
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x        
+        dotnet-version: 6.0.x
         source-url: https://nuget.pkg.github.com/enclave-networks/index.json
       env:
         NUGET_AUTH_TOKEN: ${{github.token}}
@@ -39,7 +39,7 @@ jobs:
       
     - name: Push Github Source Packages
       if: github.event_name == 'push'
-      run: dotnet nuget push src/**/*${{ steps.gitversion.outputs.SemVer }}.nupkg  --api-key ${{github.token}} -s https://nuget.pkg.github.com/enclave-networks/index.json --skip-duplicate --no-symbols true
+      run: dotnet nuget push src/**/*${{ steps.gitversion.outputs.SemVer }}.nupkg  --api-key ${{github.token}} -s https://nuget.pkg.github.com/enclave-networks/index.json --skip-duplicate --no-symbols
             
     - name: Create Release    
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
