@@ -36,12 +36,12 @@ namespace ARSoft.Tools.Net.Dns
 	/// </summary>
 	public class DnsClient : DnsClientBase
 	{
-        private DnsClient _defaultClient;
+        private static DnsClient _defaultClient;
 
 		/// <summary>
 		/// Provides a default client.
 		/// </summary>
-        public DnsClient Default => _defaultClient ??= new DnsClient(GetLocalConfiguredDnsServers(), 10000) { IsResponseValidationEnabled = true };
+        public static DnsClient Default => _defaultClient ??= new DnsClient(GetLocalConfiguredDnsServers(), 10000) { IsResponseValidationEnabled = true };
 
         /// <summary>
         ///   Gets or sets a value indicationg whether queries can be sent using UDP.
