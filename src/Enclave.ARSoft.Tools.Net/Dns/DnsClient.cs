@@ -37,12 +37,6 @@ namespace ARSoft.Tools.Net.Dns
 	public class DnsClient : DnsClientBase
 	{
 		/// <summary>
-		///   Returns a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a
-		///   query timeout of 10 seconds.
-		/// </summary>
-		public static DnsClient Default { get; private set; }
-
-		/// <summary>
 		///   Gets or sets a value indicationg whether queries can be sent using UDP.
 		/// </summary>
 		public new bool IsUdpEnabled
@@ -60,18 +54,13 @@ namespace ARSoft.Tools.Net.Dns
 			set { base.IsTcpEnabled = value; }
 		}
 
-		static DnsClient()
-		{
-			Default = new DnsClient(GetLocalConfiguredDnsServers(), 10000) { IsResponseValidationEnabled = true };
-		}
-
 		/// <summary>
 		///   Provides a new instance with custom dns server and query timeout
 		/// </summary>
 		/// <param name="dnsServer"> The IPAddress of the dns server to use </param>
 		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
 		public DnsClient(IPAddress dnsServer, int queryTimeout)
-			: this(new List<IPAddress> { dnsServer }, queryTimeout) {}
+			: this(new List<IPAddress> { dnsServer }, queryTimeout) { }
 
 		/// <summary>
 		///   Provides a new instance with custom dns servers and query timeout
@@ -212,90 +201,6 @@ namespace ARSoft.Tools.Net.Dns
 				throw new ArgumentException("Zone name must be provided", nameof(message));
 
 			return SendMessageAsync(message, token);
-		}
-
-		/// <summary>
-		///   Returns a list of the local configured DNS servers.
-		/// </summary>
-		/// <returns></returns>
-		public static List<IPAddress> GetLocalConfiguredDnsServers()
-		{
-			List<IPAddress> res = new List<IPAddress>();
-
-			try
-			{
-				foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-				{
-					if ((nic.OperationalStatus == OperationalStatus.Up) && (nic.NetworkInterfaceType != NetworkInterfaceType.Loopback))
-					{
-						foreach (IPAddress dns in nic.GetIPProperties().DnsAddresses)
-						{
-							// only use servers defined in draft-ietf-ipngwg-dns-discovery if they are in the same subnet
-							// fec0::/10 is marked deprecated in RFC 3879, so nobody should use these addresses
-							if (dns.AddressFamily == AddressFamily.InterNetworkV6)
-							{
-								IPAddress unscoped = new IPAddress(dns.GetAddressBytes());
-								if (unscoped.Equals(IPAddress.Parse("fec0:0:0:ffff::1"))
-								    || unscoped.Equals(IPAddress.Parse("fec0:0:0:ffff::2"))
-								    || unscoped.Equals(IPAddress.Parse("fec0:0:0:ffff::3")))
-								{
-									if (!nic.GetIPProperties().UnicastAddresses.Any(x => x.Address.GetNetworkAddress(10).Equals(IPAddress.Parse("fec0::"))))
-										continue;
-								}
-							}
-
-							if (!res.Contains(dns))
-								res.Add(dns);
-						}
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				Trace.TraceError("Configured nameserver couldn't be determined: " + e);
-			}
-
-			// try parsing resolv.conf since getting data by NetworkInterface is not supported on non-windows mono
-			if ((res.Count == 0) && ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
-			{
-				try
-				{
-					using (StreamReader reader = File.OpenText("/etc/resolv.conf"))
-					{
-						string line;
-						while ((line = reader.ReadLine()) != null)
-						{
-							int commentStart = line.IndexOf('#');
-							if (commentStart != -1)
-							{
-								line = line.Substring(0, commentStart);
-							}
-
-							string[] lineData = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-							IPAddress dns;
-							if ((lineData.Length == 2) && (lineData[0] == "nameserver") && (IPAddress.TryParse(lineData[1], out dns)))
-							{
-								res.Add(dns);
-							}
-						}
-					}
-				}
-				catch (Exception e)
-				{
-					Trace.TraceError("/etc/resolv.conf could not be parsed: " + e);
-				}
-			}
-
-			if (res.Count == 0)
-			{
-				// fallback: use the public dns-resolvers of google
-				res.Add(IPAddress.Parse("2001:4860:4860::8844"));
-				res.Add(IPAddress.Parse("2001:4860:4860::8888"));
-				res.Add(IPAddress.Parse("8.8.4.4"));
-				res.Add(IPAddress.Parse("8.8.8.8"));
-			}
-
-			return res.OrderBy(x => x.AddressFamily == AddressFamily.InterNetworkV6 ? 1 : 0).ToList();
 		}
 	}
 }
