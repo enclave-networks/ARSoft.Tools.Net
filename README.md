@@ -1,3 +1,5 @@
+# Archived; the ARSOFT fork is now maintained directly in the fabric repo.
+
 # Project Description
 This project contains a complete managed .Net SPF validation, SenderID validation and a dns client and dns server implementation written in C#.
 
